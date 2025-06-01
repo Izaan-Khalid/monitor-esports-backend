@@ -13,6 +13,9 @@ const app = express()
 const prisma = new PrismaClient()
 const PORT = process.env.PORT || 3000
 
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
 // Middlware
 app.use(helmet())
 app.use(cors())

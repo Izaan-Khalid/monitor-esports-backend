@@ -148,7 +148,7 @@ router.post("/checkUsernames", async (req: Request, res: Response) => {
 		await redisClient.setEx(cacheKey, 600, isAvailable.toString())
 
 		res.json({
-			suceess: isAvailable,
+			success: isAvailable,
 		})
 	} catch (err) {
 		res.status(500).json({

@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { PrismaClient } from "@prisma/client"
 import { authenticateToken } from "../middleware/auth"
-
+import redisClient from "../config/redis"
 const router = express.Router()
 const prisma = new PrismaClient()
 
@@ -123,23 +123,33 @@ router.get(
 )
 
 // Check username
-router.post("/checkUsername", async (req, res) => {
+router.post("/checkUsernames", async (req: Request, res: Response) => {
 	try {
 		const { username } = req.body
+		const cacheKey = `username:${username}`
 
+		// Check redis cache
+		const cached = await redisClient.get(cacheKey)
+		if (cached !== null) {
+			console.log(`✅ Cache hit: ${username}`)
+			res.json({ success: cached === "true" })
+			return
+		}
+
+		// Cache miss - check database
+		console.log(`❌ Cache miss: ${username}`)
 		const usernameExists = await prisma.user.findUnique({
 			where: { username: username },
 		})
 
-		if (!usernameExists) {
-			res.json({
-				success: true,
-			})
-		} else {
-			res.json({
-				success: false,
-			})
-		}
+		const isAvailable = !usernameExists
+
+		// Save to Redis (expires in 5 minutes)
+		await redisClient.setex(cacheKey, 300, isAvailable.toString())
+
+		res.json({
+			suceess: isAvailable,
+		})
 	} catch (err) {
 		res.status(500).json({
 			error: "Unable to fetch user data",

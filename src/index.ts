@@ -6,6 +6,7 @@ import cors from "cors"
 import morgan from "morgan"
 
 import authRoutes from "./routes/auth"
+import redisClient from "./config/redis"
 
 dotenv.config()
 
@@ -43,12 +44,28 @@ app.use(
 	}
 )
 
-app.listen(PORT, () => {
-	console.log(`🚀 Server running on port ${PORT}`)
-})
+// Start server and connect to Redis
+async function startServer() {
+	try {
+		// Connect to Redis first
+		await redisClient.connect()
+		console.log("✅ Redis connected")
+
+		// Then start the server
+		app.listen(PORT, () => {
+			console.log(`🚀 Server running on port ${PORT}`)
+		})
+	} catch (error) {
+		console.error("❌ Failed to start server:", error)
+		process.exit(1)
+	}
+}
+
+startServer()
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
 	await prisma.$disconnect()
+	await redisClient.quit()
 	process.exit(0)
 })

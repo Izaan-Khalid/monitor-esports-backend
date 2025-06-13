@@ -145,7 +145,7 @@ router.post("/checkUsernames", async (req: Request, res: Response) => {
 		const isAvailable = !usernameExists
 
 		// Save to Redis (expires in 5 minutes)
-		await redisClient.setex(cacheKey, 300, isAvailable.toString())
+		await redisClient.setEx(cacheKey, 300, isAvailable.toString())
 
 		res.json({
 			suceess: isAvailable,
